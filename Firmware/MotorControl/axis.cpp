@@ -116,7 +116,7 @@ void Axis::set_step_dir_active(bool active) {
 bool Axis::do_checks() {
     if (!brake_resistor_armed)
         error_ |= ERROR_BRAKE_RESISTOR_DISARMED;
-    if ((current_state_ != AXIS_STATE_IDLE) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
+    if ((current_state_ != AXIS_STATE_IDLE && current_state_ != AXIS_STATE_ENCODER_INDEX_SEARCH) && (motor_.armed_state_ == Motor::ARMED_STATE_DISARMED))
         // motor got disarmed in something other than the idle loop
         error_ |= ERROR_MOTOR_DISARMED;
     if (!(vbus_voltage >= board_config.dc_bus_undervoltage_trip_level))

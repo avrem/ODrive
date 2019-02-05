@@ -19,6 +19,7 @@ public:
 
     enum Mode_t {
         MODE_INCREMENTAL,
+        MODE_INCREMENTAL_PWM,
         MODE_HALL,
         MODE_SINCOS
     };
@@ -40,6 +41,7 @@ public:
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float bandwidth = 1000.0f;
         bool ignore_illegal_hall_state = false;
+        uint16_t pwm_pin = 0;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -50,6 +52,7 @@ public:
     bool do_checks();
 
     void enc_index_cb();
+    void enc_pwm_cb(uint32_t rise_time, uint32_t fall_time);
 
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
@@ -86,6 +89,10 @@ public:
     float sincos_sample_s_ = 0.0f;
     float sincos_sample_c_ = 0.0f;
 
+    uint32_t pos_abs_ = 0;
+    volatile uint32_t pos_abs_sum_ = 0, pos_abs_samples_left_ = 0;
+    uint32_t prev_pwm_rise_ = 0;
+
     // Communication protocol definitions
     auto make_protocol_definitions() {
         return make_protocol_member_list(
@@ -100,6 +107,7 @@ public:
             make_protocol_property("pos_cpr", &pos_cpr_),
             make_protocol_property("hall_state", &hall_state_),
             make_protocol_property("vel_estimate", &vel_estimate_),
+            make_protocol_property("pos_abs", &pos_abs_),
             // make_protocol_property("pll_kp", &pll_kp_),
             // make_protocol_property("pll_ki", &pll_ki_),
             make_protocol_object("config",
@@ -115,7 +123,8 @@ public:
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
                 make_protocol_property("calib_range", &config_.calib_range),
-                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
+                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state),
+                make_protocol_property("pwm_pin", &config_.pwm_pin)
             )
         );
     }
