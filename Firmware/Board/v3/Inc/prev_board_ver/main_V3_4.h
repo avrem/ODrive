@@ -89,3 +89,7 @@
 #define M1_ENC_A_GPIO_Port GPIOB
 #define M1_ENC_B_Pin GPIO_PIN_7
 #define M1_ENC_B_GPIO_Port GPIOB
+#define GPIO_7_Pin GPIO_PIN_15
+#define GPIO_7_GPIO_Port GPIOA
+#define GPIO_8_Pin GPIO_PIN_3
+#define GPIO_8_GPIO_Port GPIOB

@@ -613,8 +613,15 @@ void update_brake_current() {
 
 // @brief Returns the ODrive GPIO number for a given
 // TIM2 or TIM5 input capture channel number.
-int tim_2_5_channel_num_to_gpio_num(int channel) {
+int tim_2_5_channel_num_to_gpio_num(TIM_HandleTypeDef *htim, int channel) {
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+    if (htim == &htim2) {
+        if (channel >= 1 && channel <= 2) {
+            return channel + 6;
+        } else {
+            return -1;
+        }
+    }
     if (channel >= 1 && channel <= 4) {
         // the channel numbers just happen to coincide with
         // the GPIO numbers
@@ -640,14 +647,16 @@ uint32_t gpio_num_to_tim_2_5_channel(int gpio_num) {
         case 2: return TIM_CHANNEL_2;
         case 3: return TIM_CHANNEL_3;
         case 4: return TIM_CHANNEL_4;
-        default: return 0;
+        case 7: return TIM_CHANNEL_1;
+        case 8: return TIM_CHANNEL_2;
+        default: return UINT32_MAX;
     }
 #else
     // Only ch4 is available on v3.2
     if (gpio_num == 4) {
         return TIM_CHANNEL_4;
     } else {
-        return 0;
+        return UINT32_MAX;
     }
 #endif
 }
@@ -657,7 +666,6 @@ void pwm_in_init() {
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Alternate = GPIO_AF2_TIM5;
 
     TIM_IC_InitTypeDef sConfigIC;
     sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_BOTHEDGE;
@@ -666,18 +674,23 @@ void pwm_in_init() {
     sConfigIC.ICFilter = 15;
 
 #if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
-    for (int gpio_num = 1; gpio_num <= 4; ++gpio_num) {
+    for (int gpio_num = 1; gpio_num <= 8; ++gpio_num) {
 #else
     int gpio_num = 4; {
 #endif
         if (is_endpoint_ref_valid(board_config.pwm_mappings[gpio_num - 1].endpoint)
             || axes[0]->encoder_.config_.pwm_pin == gpio_num
             || axes[1]->encoder_.config_.pwm_pin == gpio_num) {
+            uint32_t channel = gpio_num_to_tim_2_5_channel(gpio_num);
+            if (channel == UINT32_MAX)
+                continue;
+            bool use_tim5 = gpio_num <= 4;
+            GPIO_InitStruct.Alternate = use_tim5 ? GPIO_AF2_TIM5 : GPIO_AF1_TIM2;
             GPIO_InitStruct.Pin = get_gpio_pin_by_pin(gpio_num);
             HAL_GPIO_DeInit(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num));
             HAL_GPIO_Init(get_gpio_port_by_pin(gpio_num), &GPIO_InitStruct);
-            HAL_TIM_IC_ConfigChannel(&htim5, &sConfigIC, gpio_num_to_tim_2_5_channel(gpio_num));
-            HAL_TIM_IC_Start_IT(&htim5, gpio_num_to_tim_2_5_channel(gpio_num));
+            HAL_TIM_IC_ConfigChannel(use_tim5 ? &htim5 : &htim2, &sConfigIC, channel); //
+            HAL_TIM_IC_Start_IT(use_tim5 ? &htim5 : &htim2, channel); //
         }
     }
 }
@@ -709,12 +722,12 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
     endpoint->set_from_float(value);
 }
 
-void pwm_in_cb(int channel, uint32_t timestamp) {
+void pwm_in_cb(TIM_HandleTypeDef *htim, int channel, uint32_t timestamp) {
     static uint32_t last_timestamp[GPIO_COUNT] = { 0 };
     static bool last_pin_state[GPIO_COUNT] = { false };
     static bool last_sample_valid[GPIO_COUNT] = { false };
 
-    int gpio_num = tim_2_5_channel_num_to_gpio_num(channel);
+    int gpio_num = tim_2_5_channel_num_to_gpio_num(htim, channel);
     if (gpio_num < 1 || gpio_num > GPIO_COUNT)
         return;
     bool current_pin_state = HAL_GPIO_ReadPin(get_gpio_port_by_pin(gpio_num), get_gpio_pin_by_pin(gpio_num)) != GPIO_PIN_RESET;
