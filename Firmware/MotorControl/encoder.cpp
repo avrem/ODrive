@@ -204,7 +204,7 @@ bool Encoder::run_offset_calibration() {
 
     // We use shadow_count_ to do the calibration, but the offset is used by count_in_cpr_
     // Therefore we have to sync them for calibration
-    shadow_count_ = count_in_cpr_;
+    set_linear_count(count_in_cpr_);
 
     float voltage_magnitude;
     if (axis_->motor_.config_.motor_type == Motor::MOTOR_TYPE_HIGH_CURRENT)
