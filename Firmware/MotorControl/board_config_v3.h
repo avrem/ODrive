@@ -100,8 +100,8 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .enable_pin = EN_GATE_Pin,
         .nCS_port = M0_nCS_GPIO_Port,
         .nCS_pin = M0_nCS_Pin,
-        .nFAULT_port = nFAULT_GPIO_Port, // the nFAULT pin is shared between both motors
-        .nFAULT_pin = nFAULT_Pin,
+        .nFAULT_port = nFAULT1_GPIO_Port,
+        .nFAULT_pin = nFAULT1_Pin,
     }
 },{
     //M1
@@ -143,8 +143,8 @@ const BoardHardwareConfig_t hw_configs[2] = { {
         .enable_pin = EN_GATE_Pin,
         .nCS_port = M1_nCS_GPIO_Port,
         .nCS_pin = M1_nCS_Pin,
-        .nFAULT_port = nFAULT_GPIO_Port, // the nFAULT pin is shared between both motors
-        .nFAULT_pin = nFAULT_Pin,
+        .nFAULT_port = nFAULT2_GPIO_Port,
+        .nFAULT_pin = nFAULT2_Pin,
     }
 } };
 #endif

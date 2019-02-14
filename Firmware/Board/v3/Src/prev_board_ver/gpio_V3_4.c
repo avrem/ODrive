@@ -46,7 +46,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PBPin PBPin */
-  GPIO_InitStruct.Pin = GPIO_5_Pin|M1_ENC_Z_Pin;
+  GPIO_InitStruct.Pin = M1_ENC_Z_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -59,10 +59,12 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(EN_GATE_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PtPin */
-  GPIO_InitStruct.Pin = nFAULT_Pin;
+  GPIO_InitStruct.Pin = nFAULT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(nFAULT_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(nFAULT1_GPIO_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = nFAULT2_Pin;
+  HAL_GPIO_Init(nFAULT2_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
