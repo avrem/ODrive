@@ -11,7 +11,7 @@ def get_dict(obj, is_config_object):
         if isinstance(v, fibre.remote_object.RemoteProperty) and is_config_object:
             result[k] = v.get_value()
         elif isinstance(v, fibre.remote_object.RemoteObject):
-            sub_dict = get_dict(v, k == 'config')
+            sub_dict = get_dict(v, is_config_object or k == 'config')
             if sub_dict != {}:
                 result[k] = sub_dict
     return result
