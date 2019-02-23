@@ -39,7 +39,6 @@ public:
         bool enable_phase_interpolation = true; // Use velocity to interpolate inside the count state
         float calib_range = 0.02f; // Accuracy required to pass encoder cpr check
         float bandwidth = 1000.0f;
-        bool ignore_illegal_hall_state = false;
     };
 
     Encoder(const EncoderHardwareConfig_t& hw_config,
@@ -114,8 +113,7 @@ public:
                 make_protocol_property("enable_phase_interpolation", &config_.enable_phase_interpolation),
                 make_protocol_property("bandwidth", &config_.bandwidth,
                     [](void* ctx) { static_cast<Encoder*>(ctx)->update_pll_gains(); }, this),
-                make_protocol_property("calib_range", &config_.calib_range),
-                make_protocol_property("ignore_illegal_hall_state", &config_.ignore_illegal_hall_state)
+                make_protocol_property("calib_range", &config_.calib_range)
             )
         );
     }
