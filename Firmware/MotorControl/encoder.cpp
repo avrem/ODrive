@@ -91,6 +91,7 @@ void Encoder::set_linear_count(int32_t count) {
     shadow_count_ = count;
     pos_estimate_ = (float)count;
     //Write hardware last
+    tim_cnt_sample_ = count;
     hw_config_.timer->Instance->CNT = count;
 
     cpu_exit_critical(prim);
