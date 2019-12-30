@@ -6,6 +6,7 @@
 #include "interface_usb.h"
 #include "interface_uart.h"
 #include "interface_can.hpp"
+#include "interface_uavcan.hpp"
 #include "interface_i2c.h"
 
 #include "odrive_main.h"
@@ -208,8 +209,7 @@ void communication_task(void * ctx) {
     if (board_config.enable_i2c_instead_of_can) {
         start_i2c_server();
     } else {
-        // TODO: finish implementing CAN
-        // start_can_server(can1_ctx, CAN1, serial_number);
+        start_uavcan_server();
     }
 
     for (;;) {
