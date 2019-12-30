@@ -5,7 +5,9 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+#ifndef HW_DRIVERLESS
 #include "drv8301.h"
+#endif
 
 class Motor {
 public:
@@ -132,7 +134,9 @@ public:
 
 //private:
 
+#ifndef HW_DRIVERLESS
     DRV8301_Obj gate_driver_; // initialized in constructor
+#endif
     uint16_t next_timings_[3] = {
         TIM_1_8_PERIOD_CLOCKS / 2,
         TIM_1_8_PERIOD_CLOCKS / 2,
@@ -151,6 +155,7 @@ public:
     bool is_calibrated_ = config_.pre_calibrated;
     Iph_BC_t current_meas_ = {0.0f, 0.0f};
     Iph_BC_t DC_calib_ = {0.0f, 0.0f};
+    float test_alpha;
     float phase_current_rev_gain_ = 0.0f; // Reverse gain for ADC to Amps (to be set by DRV8301_setup)
     CurrentControl_t current_control_ = {
         .p_gain = 0.0f,        // [V/A] should be auto set after resistance and inductance measurement
@@ -167,8 +172,10 @@ public:
         .max_allowed_current = 0.0f,
         .overcurrent_trip_level = 0.0f,
     };
+#ifndef HW_DRIVERLESS
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
+#endif
     float thermal_current_lim_ = 10.0f;  //[A]
 
     // Communication protocol definitions
@@ -183,6 +190,7 @@ public:
             make_protocol_property("DC_calib_phC", &DC_calib_.phC),
             make_protocol_property("phase_current_rev_gain", &phase_current_rev_gain_),
             make_protocol_ro_property("thermal_current_lim", &thermal_current_lim_),
+ 	    make_protocol_ro_property("ialpha", &test_alpha),
             make_protocol_function("get_inverter_temp", *this, &Motor::get_inverter_temp),
             make_protocol_object("current_control",
                 make_protocol_property("p_gain", &current_control_.p_gain),
@@ -199,6 +207,7 @@ public:
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
+#ifndef HW_DRIVERLESS
             make_protocol_object("gate_driver",
                 make_protocol_ro_property("drv_fault", &drv_fault_)
                 // make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
@@ -206,6 +215,7 @@ public:
                 // make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
                 // make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
             ),
+#endif
             make_protocol_object("timing_log",
                 make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
                 make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),
