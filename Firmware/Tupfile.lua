@@ -171,12 +171,16 @@ build{
         'communication/interface_usb.cpp',
         'communication/interface_can.cpp',
         'communication/interface_i2c.cpp',
+        'canard/canard.c',
+        'canard/canard_stm32.c',
+        'canard/node.cpp',
         'fibre/cpp/protocol.cpp',
         'FreeRTOS-openocd.c'
     },
     includes={
         'Drivers/DRV8301',
         'MotorControl',
+        'canard',
         'fibre/cpp/include',
         '.'
     }

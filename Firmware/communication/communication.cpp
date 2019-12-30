@@ -2,6 +2,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "communication.h"
+#include "node.h"
 
 #include "interface_usb.h"
 #include "interface_uart.h"
@@ -205,12 +206,12 @@ void communication_task(void * ctx) {
     if (board_config.enable_i2c_instead_of_can) {
         start_i2c_server();
     } else {
-        // TODO: finish implementing CAN
-        // start_can_server(can1_ctx, CAN1, serial_number);
+        node_start();
     }
 
     for (;;) {
-        osDelay(1000); // nothing to do
+         node_spin();
+//        osDelay(1000); // nothing to do
     }
 }
 
