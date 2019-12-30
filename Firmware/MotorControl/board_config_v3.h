@@ -155,11 +155,4 @@ const BoardHardwareConfig_t hw_configs[2] = { {
 
 
 
-#define I2C_A0_PORT GPIO_3_GPIO_Port
-#define I2C_A0_PIN GPIO_3_Pin
-#define I2C_A1_PORT GPIO_4_GPIO_Port
-#define I2C_A1_PIN GPIO_4_Pin
-#define I2C_A2_PORT GPIO_5_GPIO_Port
-#define I2C_A2_PIN GPIO_5_Pin
-
 #endif // __BOARD_CONFIG_H
