@@ -168,8 +168,7 @@ void init_can()
 void init_node()
 {
     canardInit(&canard, canard_memory_pool, sizeof(canard_memory_pool), onTransferReceived, shouldAcceptTransfer, NULL);
-int node_id = 33;
-    canardSetLocalNodeID(&canard, node_id);
+    canardSetLocalNodeID(&canard, board_config.uavcan_node_id);
 }
 
 static void processCanard()
@@ -267,6 +266,9 @@ static void uavcan_server_thread(void * ctx)
 
 void start_uavcan_server()
 {
+    if (!board_config.enable_uavcan || board_config.uavcan_node_id == 0)
+        return;
+
     node_start();
 
     // Start UAVCAN communication thread
