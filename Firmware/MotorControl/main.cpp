@@ -119,7 +119,7 @@ int odrive_main(void) {
     // Load persistent configuration (or defaults)
     load_configuration();
 
-#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 3
+#if HW_VERSION_MAJOR == 3 && HW_VERSION_MINOR >= 5
     if (board_config.enable_i2c_instead_of_can) {
         // Set up the direction GPIO as input
         GPIO_InitTypeDef GPIO_InitStruct;
