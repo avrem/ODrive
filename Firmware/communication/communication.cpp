@@ -2,11 +2,11 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "communication.h"
-#include "node.h"
 
 #include "interface_usb.h"
 #include "interface_uart.h"
 #include "interface_can.hpp"
+#include "interface_uavcan.hpp"
 #include "interface_i2c.h"
 
 #include "odrive_main.h"
@@ -206,12 +206,11 @@ void communication_task(void * ctx) {
     if (board_config.enable_i2c_instead_of_can) {
         start_i2c_server();
     } else {
-        node_start();
+        start_uavcan_server();
     }
 
     for (;;) {
-         node_spin();
-//        osDelay(1000); // nothing to do
+        osDelay(1000); // nothing to do
     }
 }
 

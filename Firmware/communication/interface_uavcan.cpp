@@ -1,6 +1,6 @@
 #include "odrive_main.h"
 
-#include "node.h"
+#include "interface_uavcan.hpp"
 
 #include "canard.h"
 #include "canard_stm32.h"
@@ -158,19 +158,7 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 
 void init_can()
 {
-    __HAL_RCC_CAN1_CLK_ENABLE();
-
-    /**CAN1 GPIO Configuration    
-    PB8     ------> CAN1_RX
-    PB9     ------> CAN1_TX 
-    */
-    GPIO_InitTypeDef GPIO_InitStruct;
-    GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    MX_CAN1_Init();
 
     CanardSTM32CANTimings timings;
     canardSTM32ComputeCANTimings(HAL_RCC_GetPCLK1Freq(), 1000000, &timings);
@@ -263,4 +251,25 @@ void node_spin()
         configSave();
 	shouldSaveConfig = false;
     }*/
+}
+
+osThreadId uavcan_thread;
+
+static void uavcan_server_thread(void * ctx) 
+{
+    (void) ctx;
+  
+    for (;;) {
+        node_spin();
+        osDelay(1);
+    }
+}
+
+void start_uavcan_server()
+{
+    node_start();
+
+    // Start UAVCAN communication thread
+    osThreadDef(uavcan_server_thread_def, uavcan_server_thread, osPriorityNormal, 0, 1024);
+    uavcan_thread = osThreadCreate(osThread(uavcan_server_thread_def), NULL);
 }
