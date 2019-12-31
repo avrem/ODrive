@@ -51,6 +51,8 @@ public:
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
 
+        float reduction_ratio = 1.0f;
+
         // Spinup settings
         float ramp_up_time = 0.4f;            // [s]
         float ramp_up_distance = 4 * M_PI;    // [rad]
@@ -213,6 +215,7 @@ public:
                 make_protocol_property("spin_up_current", &config_.spin_up_current),
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
                 make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel),
+                make_protocol_property("reduction_ratio", &config_.reduction_ratio),
                 make_protocol_property("uavcan_actuator_id", &config_.uavcan_actuator_id),
                 make_protocol_property("use_uavcan_setpoint", &config_.use_uavcan_setpoint)
             ),
