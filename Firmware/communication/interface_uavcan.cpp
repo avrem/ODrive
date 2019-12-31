@@ -241,6 +241,19 @@ void init_can()
     CanardSTM32CANTimings timings;
     canardSTM32ComputeCANTimings(HAL_RCC_GetPCLK1Freq(), 1000000, &timings);
     canardSTM32Init(&timings, CanardSTM32IfaceModeNormal);
+
+    const uint32_t FlagEFF = 1U << 31;                  ///< Extended frame format
+    const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
+    const uint32_t FlagERR = 1U << 29;                  ///< Error frame
+
+    uint32_t service_filter_id = 0x80 | (static_cast<uint32_t>(board_config.uavcan_node_id) << 8) | FlagEFF;
+    uint32_t service_filter_mask = 0x7F80 | FlagEFF | FlagRTR | FlagERR;
+
+    uint32_t ac_filter_id = (static_cast<uint32_t>(UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID) << 8) | FlagEFF;
+    uint32_t ac_filter_mask = 0xFFFF80 | FlagEFF | FlagRTR | FlagERR;
+
+    CanardSTM32AcceptanceFilterConfiguration filters[] = {{service_filter_id, service_filter_mask}, {ac_filter_id, ac_filter_mask}};
+    canardSTM32ConfigureAcceptanceFilters(filters, sizeof(filters) / sizeof(filters[0]));
 }
 
 void init_node()
