@@ -51,12 +51,17 @@ public:
         uint16_t step_gpio_pin = 0;
         uint16_t dir_gpio_pin = 0;
 
+        float reduction_ratio = 1.0f;
+
         // Spinup settings
         float ramp_up_time = 0.4f;            // [s]
         float ramp_up_distance = 4 * M_PI;    // [rad]
         float spin_up_current = 10.0f;        // [A]
         float spin_up_acceleration = 400.0f;  // [rad/s^2]
         float spin_up_target_vel = 400.0f;    // [rad/s]
+
+        uint8_t uavcan_actuator_id = 0;
+        bool use_uavcan_setpoint = false;
     };
 
     enum thread_signals {
@@ -209,7 +214,10 @@ public:
                 make_protocol_property("ramp_up_distance", &config_.ramp_up_distance),
                 make_protocol_property("spin_up_current", &config_.spin_up_current),
                 make_protocol_property("spin_up_acceleration", &config_.spin_up_acceleration),
-                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel)
+                make_protocol_property("spin_up_target_vel", &config_.spin_up_target_vel),
+                make_protocol_property("reduction_ratio", &config_.reduction_ratio),
+                make_protocol_property("uavcan_actuator_id", &config_.uavcan_actuator_id),
+                make_protocol_property("use_uavcan_setpoint", &config_.use_uavcan_setpoint)
             ),
             make_protocol_object("motor", motor_.make_protocol_definitions()),
             make_protocol_object("controller", controller_.make_protocol_definitions()),

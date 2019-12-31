@@ -83,6 +83,9 @@ struct BoardConfig_t {
                                                                         //<! The default is 26V for the 24V board version and 52V for the 48V board version.
     PWMMapping_t pwm_mappings[GPIO_COUNT];
     PWMMapping_t analog_mappings[GPIO_COUNT];
+
+    bool enable_uavcan = true;
+    uint8_t uavcan_node_id = 0;
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
