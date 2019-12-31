@@ -167,7 +167,12 @@ static inline auto make_obj_tree() {
             make_protocol_object("gpio4_pwm_mapping", make_protocol_definitions(board_config.pwm_mappings[3])),
 
             make_protocol_object("gpio3_analog_mapping", make_protocol_definitions(board_config.analog_mappings[2])),
-            make_protocol_object("gpio4_analog_mapping", make_protocol_definitions(board_config.analog_mappings[3]))
+            make_protocol_object("gpio4_analog_mapping", make_protocol_definitions(board_config.analog_mappings[3])),
+
+            make_protocol_property("enable_uavcan", &board_config.enable_uart),
+            make_protocol_property("uavcan_node_id", &board_config.uavcan_node_id),
+            make_protocol_property("uavcan_actuator_id", &board_config.uavcan_actuator_id),
+            make_protocol_property("use_uavcan_setpoint", &board_config.use_uavcan_setpoint)
             ),
         make_protocol_object("axis0", axes[0]->make_protocol_definitions()),
         make_protocol_object("axis1", axes[1]->make_protocol_definitions()),
