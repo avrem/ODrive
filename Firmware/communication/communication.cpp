@@ -149,6 +149,10 @@ static inline auto make_obj_tree() {
                 make_protocol_ro_property("addr_match_cnt", &i2c_stats_.addr_match_cnt),
                 make_protocol_ro_property("rx_cnt", &i2c_stats_.rx_cnt),
                 make_protocol_ro_property("error_cnt", &i2c_stats_.error_cnt)
+            ),
+            make_protocol_object("can",
+                make_protocol_ro_property("ovr_cnt", &can_stats_.rx_overflow_count),
+                make_protocol_ro_property("error_cnt", &can_stats_.error_count)
             )
         ),
         make_protocol_object("config",

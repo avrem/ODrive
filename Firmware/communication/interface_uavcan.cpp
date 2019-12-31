@@ -47,6 +47,7 @@
 static CanardInstance canard;
 static uint8_t canard_memory_pool[1024];
 static uint8_t transfer_id = 0;
+CanardSTM32Stats can_stats_;
 
 static void readUniqueID(uint8_t* out_uid)
 {
@@ -220,38 +221,6 @@ void init_node()
     canardSetLocalNodeID(&canard, board_config.uavcan_node_id);
 }
 
-static void processCanard()
-{
-	for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&canard)) != NULL;) {
-		const int16_t tx_res = canardSTM32Transmit(txf);
-		if (tx_res == 0) // tx timeout
-			break;
-		canardPopTxQueue(&canard);
-	}
-
-	CanardCANFrame rx_frame;
-	const int16_t rx_res = canardSTM32Receive(&rx_frame);
-	if (rx_res > 0)
-		canardHandleRxFrame(&canard, &rx_frame, HAL_GetTick() * 1000);
-}
-
-static void spinCanard(void)
-{
-    static uint32_t spin_time = 0;
-    if(HAL_GetTick() < spin_time + CANARD_SPIN_PERIOD) return;  // rate limiting
-    spin_time = HAL_GetTick();
-
-    uint8_t buffer[UAVCAN_NODE_STATUS_MESSAGE_SIZE];
-    makeNodeStatusMessage(buffer);
-    canardBroadcast(&canard,
-                    UAVCAN_NODE_STATUS_DATA_TYPE_SIGNATURE,
-                    UAVCAN_NODE_STATUS_DATA_TYPE_ID,
-                    &transfer_id,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    buffer,
-                    UAVCAN_NODE_STATUS_MESSAGE_SIZE);
-}
-
 void publishActuatorStatus(const Axis *axis)
 {
     if (axis->config_.uavcan_actuator_id == 0)
@@ -288,32 +257,32 @@ void publishActuatorStatus(const Axis *axis)
                     sizeof(buffer));
 }
 
-void publishCanard()
-{
-    static uint32_t publish_time = 0;
-    if (HAL_GetTick() < publish_time + PUBLISHER_PERIOD)
-    	return;
-    publish_time = HAL_GetTick();
-    for (size_t i = 0; i < AXIS_COUNT; ++i)
-        publishActuatorStatus(axes[i]);
-}
-
 void node_start()
 {
     init_can();
     init_node();
 }
 
-void node_spin()
+static void pollCanard()
 {
-    processCanard();
-    spinCanard();
-    publishCanard();
+    const int max_frames_per_spin = 16;
 
-/*    if (shouldSaveConfig) {
-        configSave();
-	shouldSaveConfig = false;
-    }*/
+    for (const CanardCANFrame* txf = NULL; (txf = canardPeekTxQueue(&canard)) != NULL;) {
+        const int16_t tx_res = canardSTM32Transmit(txf);
+        if (tx_res == 0) // tx timeout
+            break;
+        canardPopTxQueue(&canard);
+    }
+
+    for (int i = 0; i < max_frames_per_spin; i++) {
+        CanardCANFrame rx_frame;
+        const int16_t rx_res = canardSTM32Receive(&rx_frame);
+        if (rx_res < 1)
+            break;
+        canardHandleRxFrame(&canard, &rx_frame, HAL_GetTick() * 1000);
+    }
+
+    can_stats_ = canardSTM32GetStats();
 }
 
 osThreadId uavcan_thread;
@@ -323,7 +292,30 @@ static void uavcan_server_thread(void * ctx)
     (void) ctx;
   
     for (;;) {
-        node_spin();
+        pollCanard();        
+
+        static uint32_t spin_time = 0;
+        if(HAL_GetTick() >= spin_time + CANARD_SPIN_PERIOD) {
+            spin_time = HAL_GetTick();
+
+            uint8_t buffer[UAVCAN_NODE_STATUS_MESSAGE_SIZE];
+            makeNodeStatusMessage(buffer);
+            canardBroadcast(&canard,
+                    UAVCAN_NODE_STATUS_DATA_TYPE_SIGNATURE,
+                    UAVCAN_NODE_STATUS_DATA_TYPE_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    buffer,
+                    UAVCAN_NODE_STATUS_MESSAGE_SIZE);
+        }
+
+        static uint32_t publish_time = 0;
+        if (HAL_GetTick() >= publish_time + PUBLISHER_PERIOD) {
+            publish_time = HAL_GetTick();
+            for (size_t i = 0; i < AXIS_COUNT; ++i)
+                publishActuatorStatus(axes[i]);
+        }
+
         osDelay(1);
     }
 }
