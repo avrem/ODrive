@@ -5,7 +5,9 @@
 #error "This file should not be included directly. Include odrive_main.h instead."
 #endif
 
+#ifndef HW_DRIVERLESS
 #include "drv8301.h"
+#endif
 
 class Motor {
 public:
@@ -132,7 +134,9 @@ public:
 
 //private:
 
+#ifndef HW_DRIVERLESS
     DRV8301_Obj gate_driver_; // initialized in constructor
+#endif
     uint16_t next_timings_[3] = {
         TIM_1_8_PERIOD_CLOCKS / 2,
         TIM_1_8_PERIOD_CLOCKS / 2,
@@ -167,8 +171,10 @@ public:
         .max_allowed_current = 0.0f,
         .overcurrent_trip_level = 0.0f,
     };
+#ifndef HW_DRIVERLESS
     DRV8301_FaultType_e drv_fault_ = DRV8301_FaultType_NoFault;
     DRV_SPI_8301_Vars_t gate_driver_regs_; //Local view of DRV registers (initialized by DRV8301_setup)
+#endif
     float thermal_current_lim_ = 10.0f;  //[A]
 
     // Communication protocol definitions
@@ -199,6 +205,7 @@ public:
                 make_protocol_ro_property("max_allowed_current", &current_control_.max_allowed_current),
                 make_protocol_ro_property("overcurrent_trip_level", &current_control_.overcurrent_trip_level)
             ),
+#ifndef HW_DRIVERLESS
             make_protocol_object("gate_driver",
                 make_protocol_ro_property("drv_fault", &drv_fault_)
                 // make_protocol_ro_property("status_reg_1", &gate_driver_regs_.Stat_Reg_1_Value),
@@ -206,6 +213,7 @@ public:
                 // make_protocol_ro_property("ctrl_reg_1", &gate_driver_regs_.Ctrl_Reg_1_Value),
                 // make_protocol_ro_property("ctrl_reg_2", &gate_driver_regs_.Ctrl_Reg_2_Value)
             ),
+#endif
             make_protocol_object("timing_log",
                 make_protocol_ro_property("TIMING_LOG_GENERAL", &timing_log_[TIMING_LOG_GENERAL]),
                 make_protocol_ro_property("TIMING_LOG_ADC_CB_I", &timing_log_[TIMING_LOG_ADC_CB_I]),

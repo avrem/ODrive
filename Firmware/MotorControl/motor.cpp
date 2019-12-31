@@ -1,7 +1,6 @@
 
 #include <algorithm>
 
-#include "drv8301.h"
 #include "odrive_main.h"
 
 
@@ -10,14 +9,17 @@ Motor::Motor(const MotorHardwareConfig_t& hw_config,
              Config_t& config) :
         hw_config_(hw_config),
         gate_driver_config_(gate_driver_config),
-        config_(config),
-        gate_driver_({
+        config_(config)
+#ifndef HW_DRIVERLESS
+        ,gate_driver_({
             .spiHandle = gate_driver_config_.spi,
             .EngpioHandle = gate_driver_config_.enable_port,
             .EngpioNumber = gate_driver_config_.enable_pin,
             .nCSgpioHandle = gate_driver_config_.nCS_port,
             .nCSgpioNumber = gate_driver_config_.nCS_pin,
-        }) {
+        })
+#endif
+ {
     update_current_controller_gains();
 }
 
@@ -74,8 +76,14 @@ void Motor::DRV8301_setup() {
     // or largest possible range otherwise
     static const float kMargin = 0.90f;
     static const float kTripMargin = 1.0f; // Trip level is at edge of linear range of amplifer
+#ifdef HW_DRIVERLESS
+    static const float max_output_swing = -adc_ref_voltage * 0.5f;
+#else
     static const float max_output_swing = 1.35f; // [V] out of amplifier
+#endif
     float max_unity_gain_current = kMargin * max_output_swing * hw_config_.shunt_conductance; // [A]
+
+#ifndef HW_DRIVERLESS
     float requested_gain = max_unity_gain_current / config_.requested_current_range; // [V/V]
 
     // Decoding array for snapping gain
@@ -98,11 +106,16 @@ void Motor::DRV8301_setup() {
 
     // Values for current controller
     phase_current_rev_gain_ = 1.0f / gain_snap_down->first;
+#else
+    phase_current_rev_gain_ = -1.0f;
+#endif
+
     // Clip all current control to actual usable range
     current_control_.max_allowed_current = max_unity_gain_current * phase_current_rev_gain_;
     // Set trip level
     current_control_.overcurrent_trip_level = (kTripMargin / kMargin) * current_control_.max_allowed_current;
 
+#ifndef HW_DRIVERLESS
     // We now have the gain settings we want to use, lets set up DRV chip
     DRV_SPI_8301_Vars_t* local_regs = &gate_driver_regs_;
     DRV8301_enable(&gate_driver_);
@@ -117,11 +130,13 @@ void Motor::DRV8301_setup() {
     DRV8301_writeData(&gate_driver_, local_regs);
     local_regs->RcvCmd = true;
     DRV8301_readData(&gate_driver_, local_regs);
+#endif
 }
 
 // @brief Checks if the gate driver is in operational state.
 // @returns: true if the gate driver is OK (no fault), false otherwise
 bool Motor::check_DRV_fault() {
+#ifndef HW_DRIVERLESS
     //TODO: make this pin configurable per motor ch
     GPIO_PinState nFAULT_state = HAL_GPIO_ReadPin(gate_driver_config_.nFAULT_port, gate_driver_config_.nFAULT_pin);
     if (nFAULT_state == GPIO_PIN_RESET) {
@@ -133,6 +148,7 @@ bool Motor::check_DRV_fault() {
         // DRV8301_readData(&gate_driver_, local_regs);
         return false;
     };
+#endif
     return true;
 }
 

@@ -11,11 +11,15 @@
 #include <tim.h>
 #include <main.h>
 
+#ifdef HW_DRIVERLESS
+#define SHUNT_RESISTANCE (26.4e-3f)
+#else
 #if HW_VERSION_MAJOR == 3
 #if HW_VERSION_MINOR <= 3
 #define SHUNT_RESISTANCE (675e-6f)
 #else
 #define SHUNT_RESISTANCE (500e-6f)
+#endif
 #endif
 #endif
 

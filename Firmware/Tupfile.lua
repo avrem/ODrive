@@ -31,6 +31,11 @@ elseif boardversion == "v3.5-48V" then
     boarddir = 'Board/v3'
     FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=5"
     FLAGS += "-DHW_VERSION_VOLTAGE=48"
+elseif boardversion == "SS1" then
+    boarddir = 'Board/v3'
+    FLAGS += "-DHW_VERSION_MAJOR=3 -DHW_VERSION_MINOR=4"
+    FLAGS += "-DHW_VERSION_VOLTAGE=48"
+    FLAGS += "-DHW_DRIVERLESS"
 elseif boardversion == "" then
     error("board version not specified - take a look at tup.config.default")
 else

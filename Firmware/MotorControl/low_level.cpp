@@ -544,12 +544,14 @@ void pwm_trig_adc_cb(ADC_HandleTypeDef* hadc, bool injected) {
         // Trigger axis thread
         axis.signal_current_meas();
     } else {
+#ifndef HW_DRIVERLESS
         // DC_CAL measurement
         if (hadc == &hadc2) {
             axis.motor_.DC_calib_.phB += (current - axis.motor_.DC_calib_.phB) * calib_filter_k;
         } else {
             axis.motor_.DC_calib_.phC += (current - axis.motor_.DC_calib_.phC) * calib_filter_k;
         }
+#endif
     }
 }
 
