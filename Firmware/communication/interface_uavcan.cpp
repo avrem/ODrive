@@ -40,6 +40,7 @@
 static CanardInstance canard;
 static uint8_t canard_memory_pool[1024];
 static uint8_t transfer_id = 0;
+CanardSTM32Stats can_stats_;
 
 static void readUniqueID(uint8_t* out_uid)
 {
@@ -179,6 +180,8 @@ void pollCanard()
             break;
         canardHandleRxFrame(&canard, &rx_frame, HAL_GetTick() * 1000);
     }
+
+    can_stats_ = canardSTM32GetStats();
 }
 
 osThreadId uavcan_thread;
