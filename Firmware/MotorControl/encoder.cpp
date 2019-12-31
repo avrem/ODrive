@@ -18,11 +18,66 @@ static void enc_index_cb_wrapper(void* ctx) {
     reinterpret_cast<Encoder*>(ctx)->enc_index_cb();
 }
 
+uint8_t parity(uint16_t v)
+{
+    v ^= v >> 8;
+    v ^= v >> 4;
+    v ^= v >> 2;
+    v ^= v >> 1;
+    return v & 1;
+}
+
+#define COMM_ERROR 0xFFFF
+
+uint16_t calc_word(uint16_t val, int read)
+{
+    uint16_t out = val & 0x3FFF;
+    if (read) out |= (1 << 14);
+    out |= parity(out) << 15;
+    return out;
+}
+
+uint16_t Encoder::transact_spi(uint16_t tx)
+{
+#ifdef HW_DRIVERLESS
+    const GateDriverHardwareConfig_t &config = axis_->motor_.gate_driver_config_;
+#else
+    GateDriverHardwareConfig_t config = axis_->motor_.gate_driver_config;
+    // fixme: setup...
+#endif
+
+    uint16_t txw = tx, rxw;
+    HAL_GPIO_WritePin(config.nCS_port, config.nCS_pin, GPIO_PIN_RESET);
+    delay_us(1);
+    HAL_StatusTypeDef rv = HAL_SPI_TransmitReceive(config.spi, (uint8_t*)&txw, (uint8_t*)&rxw, 1, 1000);
+    delay_us(1);
+    HAL_GPIO_WritePin(config.nCS_port, config.nCS_pin, GPIO_PIN_SET);
+    delay_us(1);
+
+    if (rv != HAL_OK || parity(rxw) != 0)
+        return COMM_ERROR;
+    return rxw & 0x3FFF;
+}
+
+uint16_t Encoder::read_spi(uint16_t addr)
+{
+    transact_spi(calc_word(addr, 1));
+    return transact_spi(0);
+}
+
+uint16_t Encoder::write_spi(uint16_t addr, uint16_t val)
+{
+    transact_spi(calc_word(addr, 0));
+    return transact_spi(calc_word(val, 0));
+}
+
 void Encoder::setup() {
     HAL_TIM_Encoder_Start(hw_config_.timer, TIM_CHANNEL_ALL);
     if (config_.mode == MODE_INCREMENTAL)
         GPIO_subscribe(hw_config_.index_port, hw_config_.index_pin, GPIO_NOPULL,
                 enc_index_cb_wrapper, this);
+    else if (config_.mode == MODE_INCREMENTAL_PWM)
+        write_spi(0x18, (1 << 7) | (1 << 5)); // SETTINGS1: PWMon + ABIBIN
 }
 
 void Encoder::set_error(Error_t error) {
@@ -167,7 +222,7 @@ bool Encoder::run_index_search() {
                 set_linear_count(0);
                 is_ready_ = config_.pre_calibrated;
                 index_found_ = true;
- 
+
                 Axis *brother = axis_ == axes[0] ? axes[1] : axes[0];
                 axis_->run_control_loop([&](){
                     return brother && brother->current_state_ == Axis::AXIS_STATE_ENCODER_INDEX_SEARCH && !brother->encoder_.is_ready_; 

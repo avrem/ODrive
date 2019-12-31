@@ -54,6 +54,10 @@ public:
     void enc_index_cb();
     void enc_pwm_cb(uint32_t rise_time, uint32_t fall_time);
 
+    uint16_t transact_spi(uint16_t tx);
+    uint16_t read_spi(uint16_t addr);
+    uint16_t write_spi(uint16_t addr, uint16_t val);
+
     void set_linear_count(int32_t count);
     void set_circular_count(int32_t count, bool update_offset);
     bool calib_enc_offset(float voltage_magnitude);
