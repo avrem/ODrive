@@ -41,6 +41,9 @@
 #define UAVCAN_EQUIPMENT_ACTUATOR_STATUS_TYPE_SIGNATURE             0x5e9bba44faf1ea04
 #define UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIZE                       (64/8)
 
+#define UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID                   1010
+#define UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE            0xd8a7486238ec3af3
+
 static CanardInstance canard;
 static uint8_t canard_memory_pool[1024];
 static uint8_t transfer_id = 0;
@@ -108,6 +111,44 @@ static void onGetNodeInfo(CanardInstance *ins, CanardRxTransfer* transfer)
 			(uint16_t)len);
 }
 
+void process_actuator_command(uint8_t actuator, uint8_t cmd_type, float setpoint)
+{
+    if (cmd_type != 0 || actuator < 1 || actuator > 20)
+        return;
+
+    for (size_t i = 0; i < AXIS_COUNT; ++i)
+        if (axes[i]->config_.use_uavcan_setpoint && axes[i]->config_.uavcan_actuator_id == actuator) {
+            int gpio_num = 3 + i;
+            float fraction = 0.5f * (setpoint + 1.0f);
+            float value = board_config.pwm_mappings[gpio_num - 1].min + fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min);
+            axes[i]->controller_.pos_setpoint_ = value;
+        }
+}
+
+static void onArrayCommand(CanardInstance *ins, CanardRxTransfer* transfer)
+{
+    int offset = 0;
+    for (int i = 0; i <= 15; i++) { // max 15 commands in frame
+        uint8_t actuator;
+        if (canardDecodeScalar(transfer, offset, 8, false, &actuator) < 8)
+            return;
+        offset += 8;
+
+        uint8_t type;
+        if (canardDecodeScalar(transfer, offset, 8, false, &type) < 8)
+            return;
+        offset += 8;
+
+        uint16_t _setpoint;
+        if (canardDecodeScalar(transfer, offset, 16, false, &_setpoint) < 16)
+            return;
+        offset += 16;
+        float setpoint = canardConvertFloat16ToNativeFloat(_setpoint);
+
+        process_actuator_command(actuator, type, setpoint);
+    }
+}
+
 typedef void (*OnTransferReceivedCB)(CanardInstance* ins, CanardRxTransfer* transfer);
 
 typedef struct {
@@ -119,6 +160,7 @@ typedef struct {
 
 
 ReceiveTransfer receiveTransfers[] = {
+{CanardTransferTypeBroadcast, UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID, UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE, onArrayCommand},
 {CanardTransferTypeRequest, UAVCAN_GET_NODE_INFO_DATA_TYPE_ID, UAVCAN_GET_NODE_INFO_DATA_TYPE_SIGNATURE, onGetNodeInfo},
 {CanardTransferTypeRequest, UAVCAN_RESTART_NODE_DATA_TYPE_ID, UAVCAN_RESTART_NODE_DATA_TYPE_SIGNATURE, onRestartNode},
 //{CanardTransferTypeRequest, UAVCAN_PROTOCOL_PARAM_GETSET_ID, UAVCAN_PROTOCOL_PARAM_GETSET_SIGNATURE, getsetHandleCanard}
@@ -128,8 +170,10 @@ static void onTransferReceived(CanardInstance* ins,
                                CanardRxTransfer* transfer)
 {
 	for (const auto& rt: receiveTransfers)
-		if (transfer->transfer_type == rt.transfer_type && transfer->data_type_id == rt.data_type_id)
+		if (transfer->transfer_type == rt.transfer_type && transfer->data_type_id == rt.data_type_id) {
 			rt.cb(ins, transfer);
+                        break;
+                }
 }
 
 static bool shouldAcceptTransfer(const CanardInstance* ins,
@@ -150,6 +194,11 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 
 	if (transfer_type == CanardTransferTypeRequest && data_type_id == UAVCAN_RESTART_NODE_DATA_TYPE_ID) {
 		*out_data_type_signature = UAVCAN_RESTART_NODE_DATA_TYPE_SIGNATURE;
+		return true;
+	}
+
+	if (data_type_id == UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID) {
+		*out_data_type_signature = UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE;
 		return true;
 	}
 
