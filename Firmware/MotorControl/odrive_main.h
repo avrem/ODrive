@@ -86,8 +86,6 @@ struct BoardConfig_t {
 
     bool enable_uavcan = true;
     uint8_t uavcan_node_id = 0;
-    uint8_t uavcan_actuator_id = 0;
-    bool use_uavcan_setpoint = false;
 };
 extern BoardConfig_t board_config;
 extern bool user_config_loaded_;
