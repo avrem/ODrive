@@ -14,6 +14,7 @@
 #define UNIQUE_ID_LENGTH_BYTES                                      12
 
 #define CANARD_SPIN_PERIOD                                          1000
+#define PUBLISHER_PERIOD                                            100
 
 #define UAVCAN_NODE_STATUS_MESSAGE_SIZE                             7
 #define UAVCAN_NODE_STATUS_DATA_TYPE_ID                             341
@@ -36,6 +37,9 @@
 #define UAVCAN_RESTART_NODE_REQUEST_MAX_SIZE                        ((40+7)/8)
 #define UAVCAN_RESTART_NODE_RESPONSE_MAX_SIZE                       ((1+7)/8)
 
+#define UAVCAN_EQUIPMENT_ACTUATOR_STATUS_TYPE_ID                    1011
+#define UAVCAN_EQUIPMENT_ACTUATOR_STATUS_TYPE_SIGNATURE             0x5e9bba44faf1ea04
+#define UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIZE                       (64/8)
 
 static CanardInstance canard;
 static uint8_t canard_memory_pool[1024];
@@ -149,6 +153,42 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
 	return false;
 }
 
+void publishActuatorStatus(const Axis *axis)
+{
+    if (axis->config_.uavcan_actuator_id == 0)
+        return;
+
+    int8_t buffer[UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIZE];
+    memset(buffer, 0, UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIZE);
+
+    canardEncodeScalar(buffer, 0, 8, &axis->config_.uavcan_actuator_id);
+
+    float position = 2 * M_PI * axis->encoder_.pos_estimate_ / (axis->encoder_.config_.cpr * axis->config_.reduction_ratio);
+    uint16_t _position = canardConvertNativeFloatToFloat16(position);
+    canardEncodeScalar(buffer, 8, 16, &_position);
+
+    // force 16
+    // speed 16
+
+    float Id = axis->motor_.current_control_.Id_measured;
+    float Iq = axis->motor_.current_control_.Iq_measured;
+    float I = sqrtf(Id * Id + Iq * Iq);
+    uint8_t _power;
+    if (isnan(I) || isinf(I) || I > 100.0f || I < 0.0f)
+        _power = 127;
+    else
+        _power = (int)(I + 0.5f);
+    canardEncodeScalar(buffer, 57, 7, &_power);
+
+    canardBroadcast(&canard,
+                    UAVCAN_EQUIPMENT_ACTUATOR_STATUS_TYPE_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ACTUATOR_STATUS_TYPE_ID,
+                    &transfer_id,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    sizeof(buffer));
+}
+
 void init_can()
 {
     CanardSTM32CANTimings timings;
@@ -206,6 +246,13 @@ static void uavcan_server_thread(void * ctx)
                     CANARD_TRANSFER_PRIORITY_LOW,
                     buffer,
                     UAVCAN_NODE_STATUS_MESSAGE_SIZE);
+        }
+
+        static uint32_t publish_time = 0;
+        if (HAL_GetTick() >= publish_time + PUBLISHER_PERIOD) {
+            publish_time = HAL_GetTick();
+            for (size_t i = 0; i < AXIS_COUNT; ++i)
+                publishActuatorStatus(axes[i]);
         }
 
         osDelay(1);
