@@ -36,6 +36,8 @@ const float adc_ref_voltage = 3.3f;
 // Arbitrary non-zero inital value to avoid division by zero if ADC reading is late
 float vbus_voltage = 12.0f;
 bool brake_resistor_armed = false;
+
+uint32_t last_valid_pwm_ms;
 /* Private constant data -----------------------------------------------------*/
 static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
 static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
@@ -701,8 +703,8 @@ void pwm_in_init() {
 #define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ
 #define PWM_MIN_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse
 #define PWM_MAX_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2000UL) // 2ms high is considered full forward
-#define PWM_MIN_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 500UL) // ignore high periods shorter than 0.5ms
-#define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2500UL) // ignore high periods longer than 2.5ms
+#define PWM_MIN_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 800UL) // ignore high periods shorter than 0.8ms
+#define PWM_MAX_LEGAL_HIGH_TIME    ((TIM_2_5_CLOCK_HZ / 1000000UL) * 2200UL) // ignore high periods longer than 2.2ms
 #define PWM_INVERT_INPUT        false
 
 void handle_pulse(int gpio_num, uint32_t high_time) {
@@ -722,6 +724,8 @@ void handle_pulse(int gpio_num, uint32_t high_time) {
         return;
 
     endpoint->set_from_float(value);
+
+    last_valid_pwm_ms = HAL_GetTick();
 }
 
 void pwm_in_cb(TIM_HandleTypeDef *htim, int channel, uint32_t timestamp) {
