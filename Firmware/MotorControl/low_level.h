@@ -56,6 +56,8 @@ void start_analog_thread();
 
 void update_brake_current();
 
+void pwm_in_startstop(int gpio_num, bool start);
+
 inline uint32_t cpu_enter_critical() {
     uint32_t primask = __get_PRIMASK();
     __disable_irq();

@@ -699,6 +699,18 @@ void pwm_in_init() {
     }
 }
 
+void pwm_in_startstop(int gpio_num, bool start)
+{
+    TIM_HandleTypeDef *htim = gpio_num <= 4 ? &htim5 : &htim2;
+    uint32_t channel = gpio_num_to_tim_2_5_channel(gpio_num);
+    if (channel == UINT32_MAX)
+        return;
+    if (start)
+        HAL_TIM_IC_Start_IT(htim, channel);
+    else
+        HAL_TIM_IC_Stop_IT(htim, channel);       
+}
+
 //TODO: These expressions have integer division by 1MHz, so it will be incorrect for clock speeds of not-integer MHz
 #define TIM_2_5_CLOCK_HZ        TIM_APB1_CLOCK_HZ
 #define PWM_MIN_HIGH_TIME          ((TIM_2_5_CLOCK_HZ / 1000000UL) * 1000UL) // 1ms high is considered full reverse

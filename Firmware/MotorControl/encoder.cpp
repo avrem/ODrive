@@ -212,9 +212,13 @@ bool Encoder::run_index_search() {
             pos_abs_sum_ = 0;
             pos_abs_samples_left_ = num_samples;
 
+            pwm_in_startstop(config_.pwm_pin, true);
+
             axis_->run_control_loop([&](){
                 return pos_abs_samples_left_ > 0;
             });
+
+            pwm_in_startstop(config_.pwm_pin, false);
 
             if (pos_abs_samples_left_ == 0) {
                 uint32_t pos = pos_abs_sum_ / num_samples;
