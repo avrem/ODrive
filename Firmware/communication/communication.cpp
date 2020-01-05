@@ -208,7 +208,8 @@ void communication_task(void * ctx) {
     // Allow main init to continue
     endpoint_list_valid = true;
     
-    start_uart_server();
+    if (board_config.enable_uart)
+        start_uart_server();
     start_usb_server();
     if (board_config.enable_i2c_instead_of_can) {
         start_i2c_server();
