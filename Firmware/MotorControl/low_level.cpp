@@ -37,11 +37,12 @@ const float adc_ref_voltage = 3.3f;
 float vbus_voltage = 12.0f;
 bool brake_resistor_armed = false;
 
-uint32_t last_valid_pwm_ms;
 /* Private constant data -----------------------------------------------------*/
 static const GPIO_TypeDef* GPIOs_to_samp[] = { GPIOA, GPIOB, GPIOC };
 static const int num_GPIO = sizeof(GPIOs_to_samp) / sizeof(GPIOs_to_samp[0]); 
 /* Private variables ---------------------------------------------------------*/
+
+static uint32_t last_valid_pwm_ms;
 
 // Two motors, sampling port A,B,C (coherent with current meas timing)
 static uint16_t GPIO_port_samples [2][num_GPIO];
@@ -795,4 +796,14 @@ void start_analog_thread()
 {
     osThreadDef(thread_def, analog_polling_thread, osPriorityLow, 0, 4*512);
     osThreadCreate(osThread(thread_def), NULL);
+}
+
+extern "C" void hz50_cb(uint32_t ms)
+{
+    if (ms < last_valid_pwm_ms + 70)
+        return;
+
+    for (size_t i = 0; i < AXIS_COUNT; ++i)
+        if (axes[i]->config_.use_uavcan_setpoint)
+            axes[i]->controller_.pos_setpoint_ = axes[i]->uavcan_setpoint_;
 }

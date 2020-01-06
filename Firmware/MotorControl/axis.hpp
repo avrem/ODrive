@@ -185,6 +185,8 @@ public:
     GPIO_TypeDef* dir_port_;
     uint16_t dir_pin_;
 
+    float uavcan_setpoint_ = 0.0f;
+
     State_t requested_state_ = AXIS_STATE_STARTUP_SEQUENCE;
     State_t task_chain_[10] = { AXIS_STATE_UNDEFINED };
     State_t& current_state_ = task_chain_[0];
