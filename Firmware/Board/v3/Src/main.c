@@ -77,7 +77,6 @@ void SystemClock_Config(void);
 void MX_FREERTOS_Init(void);
 
 /* USER CODE BEGIN PFP */
-void hz50_cb(uint32_t ms);
 /* Private function prototypes -----------------------------------------------*/
 
 /* USER CODE END PFP */
@@ -300,12 +299,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
-  if (htim->Instance == TIM14) {
-    uint32_t now = HAL_GetTick();
-    if ((now % 20) == 0) {
-       hz50_cb(now);
-    }
-  }
+
   /* USER CODE END Callback 1 */
 }
 

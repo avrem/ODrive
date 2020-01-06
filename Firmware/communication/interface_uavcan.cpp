@@ -117,8 +117,11 @@ void process_actuator_command(uint8_t actuator, uint8_t cmd_type, float setpoint
     if (cmd_type != 0 || actuator < 1 || actuator > 20)
         return;
 
+    if (HAL_GetTick() < last_valid_pwm_ms + 70)
+        return;
+
     for (size_t i = 0; i < AXIS_COUNT; ++i)
-        if (axes[i]->config_.uavcan_actuator_id == actuator) {
+        if (axes[i]->config_.use_uavcan_setpoint && axes[i]->config_.uavcan_actuator_id == actuator) {
             int gpio_num = 3 + i;
 
             float fraction = setpoint + 0.5f;
@@ -128,7 +131,7 @@ void process_actuator_command(uint8_t actuator, uint8_t cmd_type, float setpoint
                 fraction = 1.0f;
 
             float value = board_config.pwm_mappings[gpio_num - 1].min + fraction * (board_config.pwm_mappings[gpio_num - 1].max - board_config.pwm_mappings[gpio_num - 1].min);
-            axes[i]->uavcan_setpoint_ = value;
+            axes[i]->controller_.pos_setpoint_ = value;
         }
 }
 

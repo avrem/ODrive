@@ -24,6 +24,7 @@ extern const float adc_ref_voltage;
 extern float vbus_voltage;
 extern bool brake_resistor_armed;
 extern uint16_t adc_measurements_[ADC_CHANNEL_COUNT];
+extern uint32_t last_valid_pwm_ms;
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
